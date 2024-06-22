@@ -1,0 +1,27 @@
+# Bytecode files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+
+# Log and data files that might be generated
+*.log
+*.csv
+*.json
+
+# Directory for temporary files
+temp/
