@@ -2,13 +2,19 @@ import os
 import requests
 import re
 from bs4 import BeautifulSoup
-from utils.common import create_safe_filename, ensure_directory
+from utils.common import create_safe_filename, ensure_directory, normalize_dashes
 
 class ParsedChapterWebpage:
+    # Class attribute to keep track of the chapter count
+    chapter_count = 0
+
     def __init__(self, url_str):
         self.url = url_str
         self.soup = None
         self.load_page()
+        
+        # Increment the chapter count each time a new instance is created
+        ParsedChapterWebpage.chapter_count += 1        
 
     def load_page(self):
         try:
@@ -25,32 +31,24 @@ class ParsedChapterWebpage:
     def get_novel_name(self):
         title_tag = self.soup.find('title')
         if title_tag:
+            title_tag_text = normalize_dashes(title_tag.text)
             # Split using " - Read " and take the first part, then split by '#' and take the first part again
-            novel_name = title_tag.text.split(' - Read ')[0].split('#')[0].strip()
+            novel_name = title_tag_text.split(' - Read ')[0].split('#')[0].strip()
             return novel_name
         return 'Unknown Novel Name'
 
     def get_chapter_number(self):
-        title_tag = self.soup.find('title')
-        if title_tag:
-            # Find pattern "#Chapter " followed by one or more digits
-            match = re.search(r'#Chapter (\d+)', title_tag.text)
-            if match:
-                return match.group(1)
-        return 'Unknown Chapter Number'
-    
+        # Simply return the chapter count
+        return ParsedChapterWebpage.chapter_count
+
     def get_chapter_title(self):
         title_tag = self.soup.find('title')
         if title_tag:
-            # Define a regex pattern to capture text after "Chapter ddd" and before " - Read"
-            pattern = r'Chapter \d+[:\-]?\s*(.*?)\s*- Read'
-            match = re.search(pattern, title_tag.text)
-            
-            if match:
-                # Clean the captured title by removing leading non-alphanumeric characters
-                title = re.sub(r'^[^a-zA-Z0-9]+', '', match.group(1).strip())
-                return title if title else 'No Title'
-        return 'No Title'    
+            # Normalize and extract the chapter title as defined
+            title_tag_text = normalize_dashes(title_tag.text)
+            chapter_title = title_tag_text.split('#')[1].split(' - Read')[0].strip()
+            return chapter_title
+        return 'No Title'
 
     def get_chapter_text(self):
         # Find the main container div by its id
@@ -96,7 +94,7 @@ class ParsedChapterWebpage:
         full_content = f"{header}{content}"
         
         safe_title = create_safe_filename(chapter_title if chapter_title != 'None' else 'Untitled')        
-        filename = f"{int(chapter_number):07}-{safe_title if chapter_title != 'None' else 'Untitled'}.html"
+        filename = f"{int(ParsedChapterWebpage.chapter_count):07}-{safe_title if chapter_title != 'None' else 'Untitled'}.html"
         with open(f"{dir}/{filename}", 'w', encoding='utf-8') as file:
             file.write(full_content)
 
@@ -110,7 +108,7 @@ class ParsedChapterWebpage:
         full_content = f"{header}{content.replace('<p>', '').replace('</p>', '\n')}"
 
         safe_title = create_safe_filename(chapter_title if chapter_title != 'None' else 'Untitled')
-        filename = f"{int(chapter_number):07}-{safe_title if chapter_title != 'None' else 'Untitled'}.txt"
+        filename = f"{int(ParsedChapterWebpage.chapter_count):07}-{safe_title if chapter_title != 'None' else 'Untitled'}.txt"
         with open(f"{dir}/{filename}", 'w', encoding='utf-8') as file:
             file.write(full_content)
 

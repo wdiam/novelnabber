@@ -8,9 +8,11 @@ def create_safe_filename(input_string):
     safe_filename = re.sub(r'[^\w.-]', '_', input_string)
     return safe_filename    
 
+
 def sanitize_no_specialchars(text):
     """Sanitize the string to keep only alphanumeric characters and spaces, remove others."""
     return re.sub(r'[^a-zA-Z0-9 ]', '', text)
+
 
 def ensure_directory(dir):
     """Ensure the directory exists, create if it does not, handle errors if creation fails."""
@@ -28,3 +30,7 @@ def random_sleep(min_seconds=1, max_seconds=5):
     # Sleep for the computed time
     time.sleep(sleep_time)
 
+
+def normalize_dashes(text):
+    # Replace em dashes with hyphen-minuses
+    return text.replace('—', '-') if not text is None else text
