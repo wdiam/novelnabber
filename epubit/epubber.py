@@ -1,7 +1,18 @@
 import os
 from ebooklib import epub
+from lxml import etree, html
 from bs4 import BeautifulSoup
 from utils.common import sanitize_no_specialchars
+
+# Function to remove parent <p> tags containing nested <p> tags
+def remove_nested_p_tags(html_content):
+    document_root = html.fromstring(html_content)
+    p_elements = document_root.xpath('//p')
+    for p in p_elements:
+        if p.xpath('.//p'):
+            p.getparent().remove(p)
+    return etree.tostring(document_root, pretty_print=True, method="html", encoding="unicode")
+
 
 def create_epub_book(file_paths, 
                      out_dir,
@@ -27,12 +38,21 @@ def create_epub_book(file_paths,
             with open(file_path, 'r', encoding='utf-8') as file:
                 html_content = file.read()
 
-            soup = BeautifulSoup(html_content, 'html.parser')
-            title_tag = soup.find('h4')
-            chapter_title = title_tag.text if title_tag else 'No Title'
+            # Remove nested <p> tags
+            html_content = remove_nested_p_tags(html_content)                
+
+            # Parse HTML and convert to XHTML using lxml
+            document_root = html.fromstring(html_content)
+            etree.strip_elements(document_root, 'script', 'view', 'check', 'svg') # Remove sketchy tags
+            xhtml_content = etree.tostring(document_root, pretty_print=True, method="xml", encoding="unicode")
+            
+            # Find title for the chapter
+            title_element = document_root.xpath('//h4')[0] if document_root.xpath('//h4') else None
+            chapter_title = title_element.text if title_element is not None else 'No Title'
 
             chapter = epub.EpubHtml(title=chapter_title, file_name=os.path.basename(file_path), lang='en')
-            chapter.content = html_content
+            chapter.content = xhtml_content  # Use the XHTML content
+            chapter.media_type = 'application/xhtml+xml'  # Set correct media type
             book.add_item(chapter)
             all_chapters.append(chapter)
 

@@ -24,4 +24,4 @@ Thumbs.db
 *.json
 
 # Directory for temporary files
-temp/
+temp*/
